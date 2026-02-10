@@ -23,9 +23,9 @@ st.sidebar.header('Student Information')
 # Define input options
 # gender_options = ['Male', 'Female']
 academic_pressure_options = ['1', '2', '3', '4', '5']
-# study_satisfaction_options = ['1', '2', '3', '4', '5']
-sleep_duration_options = ['Less than 5 hours', '5-6 hours', '7-8 hours', 'More than 8 hours', 'Others']
-# dietary_habits_options = ['Healthy', 'Moderate', 'Unhealthy']
+study_satisfaction_options = ['1', '2', '3', '4', '5']
+sleep_duration_options = ['Less than 5 hours', '5-6 hours', '7-8 hours', 'More than 8 hours']
+dietary_habits_options = ['Healthy', 'Moderate', 'Unhealthy']
 # degree_mapping = {
 #     'Bachelor of Pharmacy': 'B.Pharm',
 #     'Bachelor of Science': 'BSc',
@@ -61,14 +61,29 @@ family_history_options = ['No', 'Yes']
 # Collect Inputs in Sidebar
 # gender = st.sidebar.selectbox("Select Gender", gender_options)
 age = st.sidebar.slider("Age", 16, 100, 20)
+
+# GPA System Selection
+gpa_scale = st.sidebar.selectbox("Select GPA Scale", ["10.0 Scale", "5.0 Scale", "4.0 Scale"])
+
+if gpa_scale == "10.0 Scale":
+    cgpa = st.sidebar.slider("CGPA", 0.0, 10.0, 8.0, 0.1)
+    cgpa_model = cgpa
+elif gpa_scale == "5.0 Scale":
+    cgpa = st.sidebar.slider("CGPA", 0.0, 5.0, 4.0, 0.1)
+    cgpa_model = (cgpa / 5.0) * 10.0
+else:  # 4.0 Scale
+    cgpa = st.sidebar.slider("CGPA", 0.0, 4.0, 3.2, 0.1)
+    cgpa_model = (cgpa / 4.0) * 10.0
+
+# Round to match the 0.1 step of the original scale
+cgpa_model = round(cgpa_model, 1)
+study_satisfaction = st.sidebar.selectbox("Select Study Satisfaction", study_satisfaction_options)
 study_hours = st.sidebar.slider("Study Hours per Day", 0, 12, 4)
 sleep_duration = st.sidebar.selectbox("Select Sleep Duration", sleep_duration_options)
 # family_history = st.sidebar.selectbox("Family History of Mental Illnesses?", family_history_options)
 academic_pressure = st.sidebar.selectbox("Select Academic Pressure", academic_pressure_options)
-# cgpa = st.sidebar.slider("CGPA", 0.0, 10.0, 4.0, 0.1)
 financial_stress = st.sidebar.selectbox("Select Financial Stress Level", financial_stress_options)
-# study_satisfaction = st.sidebar.selectbox("Select Study Satisfaction", study_satisfaction_options)
-# dietary_habits = st.sidebar.selectbox("Select Dietary Habits", dietary_habits_options)
+dietary_habits = st.sidebar.selectbox("Select Dietary Habits", dietary_habits_options)
 # degree_display = st.sidebar.selectbox("Select Course of Study", list(degree_mapping.keys()))
 # degree_val = degree_mapping[degree_display]
 suicidal_thoughts = st.sidebar.selectbox("Have you ever had any Suicidal Thoughts?", suicidal_thoughts_options)
@@ -77,17 +92,22 @@ suicidal_thoughts = st.sidebar.selectbox("Have you ever had any Suicidal Thought
 # Create a button to make a prediction
 if st.sidebar.button('Predict Depression'):
     
+    # Input Validation: CGPA cannot be 0
+    if cgpa == 0:
+        st.error("CGPA cannot be 0. Please enter a valid CGPA.")
+        st.stop()
+    
     # Create DataFrame for display (showing full names)
     input_display = pd.DataFrame({
         # 'Gender': [gender],
         'Age': [age],
         # 'Family History': [family_history],
         'Academic Pressure': [academic_pressure],
-        # 'CGPA': [cgpa],
+        'CGPA': [cgpa],
         'Study Hours': [study_hours],
         # 'Study Satisfaction': [study_satisfaction],
         'Sleep Duration': [sleep_duration],
-        # 'Dietary Habits': [dietary_habits],
+        'Dietary Habits': [dietary_habits],
         # 'Degree': [degree_display],
         'Suicidal Thoughts': [suicidal_thoughts],
         'Financial Stress': [financial_stress]
@@ -99,11 +119,11 @@ if st.sidebar.button('Predict Depression'):
         'age': [age],
         # 'family_history': [family_history],
         'academic_pressure': [academic_pressure],
-        # 'cgpa': [cgpa],
+        'cgpa': [cgpa_model],
         'study_hours': [study_hours],
         # 'study_satisfaction': [study_satisfaction],
         'sleep_duration': [sleep_duration],
-        # 'dietary_habits': [dietary_habits],
+        'dietary_habits': [dietary_habits],
         # 'degree': [degree_val],
         'suicidal_thoughts': [suicidal_thoughts],
         'financial_stress': [financial_stress]
@@ -128,7 +148,8 @@ if st.sidebar.button('Predict Depression'):
     # One-hot encoding
     df_encoded = pd.get_dummies(df_input, 
                               columns = ['age', 'academic_pressure', 'study_hours', 'sleep_duration',
-                                         'suicidal_thoughts', 'financial_stress']
+                                         'suicidal_thoughts', 'financial_stress', 'dietary_habits',
+                                         'cgpa']
                              )
     
     # Align columns with model
@@ -141,11 +162,11 @@ if st.sidebar.button('Predict Depression'):
     st.header('Prediction Result')
     
     if prediction == 0:
-        st.subheader('**You likely do not have Depression**=')
-        st.markdown("however, if you have concerns about your mental health, consider seeking professional advice.")
+        st.subheader('You are predicted to **not have Depression**')
+        st.markdown("However, if you have concerns about your mental health, consider seeking professional advice.")
     else:
-        st.subheader('**You likely have Depression**')
-        st.markdown("see a healthcare professional for a proper diagnosis and support.")
+        st.subheader('You are predicted to **have Depression**')
+        st.markdown("See a healthcare professional for a comprehensive evaluation and support immediately.")
 
     # Display the input data for reference
     st.write("---")
